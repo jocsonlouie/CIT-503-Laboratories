@@ -1,6 +1,6 @@
-# Vuebase
+# My Vue Laboratories
 
-Welcome to my CIT 510 Laboratories built with [Vue](https://vuejs.org) and [Vuetify](https://vuetifyjs.com)
+Welcome! My name is Louie B. Jocson here is my CIT 510 Laboratories built with [Vue](https://vuejs.org) and [Vuetify](https://vuetifyjs.com)
 
 ## Requirements
 
