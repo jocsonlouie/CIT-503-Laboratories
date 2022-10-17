@@ -2,8 +2,8 @@
     <div>
         <v-toolbar dense color="primary" dark extended extension-height="300" flat>
             <v-toolbar-title class="mx-auto" slot="extension">
-                <span>Welcome to my application</span>
-                <h2>Laboratory Compilation</h2>
+                <span class="text-uppercase">research</span>
+                <h2>Vuetify Vue UI Library</h2>
                 <v-layout row>
                     <v-flex wrap>
                         <v-btn outline large fab icon color="white" class="outine-2">
@@ -29,13 +29,27 @@
             <v-layout row>
                 <v-flex xs12 md8 offset-md2>
                     <v-card flat class="card--flex-toolbar" color="transparent">
-                        <v-container fluid grid-list-lg>
+                        <v-container fluid grid-list-lg class="white">
                             <v-layout row wrap>
                                 <v-flex xs12>
-                                    <h2 class="white--text">Explore my application</h2>
+                                    <h2 class="headline">Explore Vuetify</h2>
                                 </v-flex>
                             </v-layout>
                             <v-layout row wrap>
+                                <v-flex sm12>
+                                    <span class="font-weight-bold">What is Vuetify?</span>
+                                    <div>Vuetify is a complete UI framework built on top of Vue.js. The goal of the
+                                        project is to provide developers with the tools they need to build rich and
+                                        engaging user experiences. Unlike other frameworks, Vuetify is designed from the
+                                        ground up to be easy to learn and rewarding to master with hundreds of carefully
+                                        crafted components from the Material Design specification.
+                                        <br><br>
+                                        Vuetify takes a mobile first approach to design which means your application
+                                        just works out of the box—whether it’s on a phone, tablet, or desktop computer.
+
+                                    </div>
+                                    <!-- <v-btn x-large color="primary mb-4" @click="compute"> Compute Values</v-btn> -->
+                                </v-flex>
                                 <v-flex xs12 sm6 md6 lg6 v-for="item in links" :key="item.id">
                                     <v-hover>
                                         <v-card slot-scope="{ hover }" :class="`elevation-${hover ? 12 : 2}`">
@@ -52,8 +66,7 @@
                                             </v-card-title>
 
                                             <v-card-actions>
-
-                                                <v-btn flat color="primary" :to="item.link">Explore</v-btn>
+                                                <v-btn flat color="primary" :href="item.link">Get started</v-btn>
                                             </v-card-actions>
                                         </v-card>
                                     </v-hover>
@@ -74,32 +87,30 @@ export default {
             links: [
                 {
                     id: '1',
-                    title: 'Simple Calculator',
-                    description: 'Explore my simple calculator activity.',
+                    title: 'Documentation',
+                    description: 'Get started with Vuetify, the world’s most popular Vue.js framework for building feature rich, blazing fast applications.',
                     color: 'orange',
-                    link: "/simple-calculator"
+                    link: 'https://vuetifyjs.com/en/getting-started/installation/'
                 },
                 {
                     id: '2',
-                    title: 'String Manipulation',
-                    description: 'Explore my string manipulation laboratory.',
+                    title: 'Why Vuetify?',
+                    description: 'Since its initial release in 2014, Vue.js has grown to be one of the most popular JavaScript frameworks in the world.',
                     color: 'teal',
-                    link: '/string-manipulation/string-to-uppercase'
+                    link: 'https://vuetifyjs.com/en/introduction/why-vuetify/'
                 },
-                {
-                    id: '3',
-                    title: 'Vuetify',
-                    description: 'Explore my research on the vuetify.',
-                    color: 'blue',
-                    link: "/vuetify"
-                },
-                {
-                    id: '4',
-                    title: 'Composition API',
-                    description: 'Explore my research on the composition api',
-                    color: 'purple',
-                    link: '/composition-api'
-                }
+                // {
+                //     id: '3',
+                //     title: 'Notifications',
+                //     description: 'Manage your notification campaigns and send messages to reach the right users at the right time',
+                //     color: 'blue'
+                // },
+                // {
+                //     id: '4',
+                //     title: 'Authentification',
+                //     description: 'Authenticate and manage users from a variety of providers without server-side-code',
+                //     color: 'purple'
+                // }
             ]
         }
     }
@@ -112,7 +123,7 @@ export default {
 }
 
 .card--flex-toolbar {
-    margin-top: -124px;
+    margin-top: -64px;
 }
 
 .learn-more-btn {
