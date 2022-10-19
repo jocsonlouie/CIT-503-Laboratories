@@ -25,6 +25,11 @@ const routes = [
         component: () => import('../views/MidtermLab2')
     },
     {
+        path: '/midterm-project',
+        name: 'midterm-project',
+        component: () => import('../views/MidtermProject')
+    },
+    {
         path: '/vuetify',
         name: 'vuetify',
         component: () => import('../views/VuetifyResearch')
