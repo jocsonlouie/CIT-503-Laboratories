@@ -220,6 +220,11 @@ export default {
                     link: '/midterm-lab-2'
                 },
                 {
+                    icon: 'laptop',
+                    title: 'Midterm Project',
+                    link: '/midterm-project'
+                },
+                {
                     icon: 'design_services',
                     title: 'Vuetify',
                     link: '/vuetify'
