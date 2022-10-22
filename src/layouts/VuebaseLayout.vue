@@ -77,7 +77,7 @@
             <!--<v-divider></v-divider>-->
         </v-navigation-drawer>
 
-        <v-toolbar app flat dense color="primary" dark>
+        <v-toolbar app flat dense color="#030303" dark>
             <v-toolbar-side-icon @click.stop="drawer = !drawer" class="hidden-lg-and-up"
                 :class="searching ? 'hidden-xs-only' : ''" />
             <v-menu :nudge-width="100" :class="searching ? 'hidden-xs-only' : ''">
@@ -257,7 +257,7 @@ export default {
                     link: '/personal-life/my-school'
                 }
             ],
-            miniVariant: false,
+            miniVariant: true,
             right: true,
             rightDrawer: false,
             tabs: null,
