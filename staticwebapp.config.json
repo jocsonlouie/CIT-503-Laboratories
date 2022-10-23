@@ -1,9 +1,6 @@
 {
-    "routes": [
-        {
-            "route": "/midterm-project",
-            "redirect": "/midterm-project",
-            "statusCode": 301
-        }
-    ]
+    "navigationFallBack": {
+        "rewrite": "/index.html",
+        "exclude": ["*.{css, scss,js,png,gif,ico,jpg,svg}"]
+    }
 }
