@@ -346,7 +346,7 @@ export default {
         },
 
         reload: function () {
-            this.$router.go()
+            this.$router.reload();
         }
 
 
