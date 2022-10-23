@@ -1,0 +1,9 @@
+{
+    "routes": [
+        {
+            "route": "/midterm-project",
+            "redirect": "/midterm-project",
+            "statusCode": 301
+        }
+    ]
+}
