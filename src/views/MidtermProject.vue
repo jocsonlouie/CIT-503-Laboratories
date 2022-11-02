@@ -14,10 +14,18 @@
                 <v-card-title class="headline pa-0 mb-2 ">
                     <v-layout row class="mb-2">
                         <v-flex xs12>
-                            <v-chip block color="error white--text text-uppercase">
+                            <v-chip block color="error white--text text-uppercase" v-if="!isLoggedIn">
                                 highscore on this device:
                                 {{ highestscore
                                 }}
+                            </v-chip>
+                            <v-chip block color="error white--text text-uppercase" v-else="isLoggedIn">
+                                Your highscore:
+                                {{ signInScore
+                                }}
+                            </v-chip>
+                            <v-chip block color="warning white--text text-uppercase" v-if="isLoggedIn">
+                                Login as {{ displayName }}
                             </v-chip>
                         </v-flex>
                     </v-layout>
@@ -34,6 +42,16 @@
 
                 </v-card-text>
                 <v-card-actions class="pa-0">
+                    <v-btn class="mr-3" outline text @click="signInWithGoogle" flat v-if="!isLoggedIn">
+                        login with google
+                        <v-icon right>login
+                        </v-icon>
+                    </v-btn>
+                    <v-btn class="mr-3" outline text @click="handleSignOut" flat v-else>
+                       logout
+                        <v-icon right>logout
+                        </v-icon>
+                    </v-btn>
                     <v-spacer></v-spacer>
                     <v-btn class=" mr-3" outline text to="/" flat>
                         cancel
@@ -169,258 +187,315 @@
 </template>
 
 <script >
-import axios from 'axios';
+import axios from "axios";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut,
+} from "firebase/auth";
+import {
+  getDoc,
+  collection,
+  where,
+  query,
+  doc,
+  setDoc,
+} from "@firebase/firestore";
+import db from "@/fb";
 
 export default {
+  data() {
+    let questions = [];
+    let itemsRef = [];
+    const STORAGE_KEY = "highscores";
+    let highestscore = localStorage.getItem(STORAGE_KEY);
+    const optionChosen = (element) => {
+      if (element) {
+        itemsRef.push(element);
+      }
+    };
 
-    data() {
-        let questions = [];
-        let itemsRef = [];
-        const STORAGE_KEY = "highscores";
-        let highestscore = localStorage.getItem(STORAGE_KEY);
-        const optionChosen = (element) => {
-            if (element) {
-                itemsRef.push(element);
-            }
-        };
+    const currentQuestion = {
+      question: "",
+      answer: 1,
+      choices: [],
+      difficulty: "",
+    };
 
-        const currentQuestion = {
-            question: "",
-            answer: 1,
-            choices: [],
-            difficulty: "",
-        };
-
-        return {
-            value: 50,
-            dialog: true,
-            show: true,
-            questions,
-            currentQuestion,
-            questionCounter: 0,
-            timer: 100,
-            score: 0,
-            canClick: true,
-            itemsRef,
-            optionChosen,
-            snackbar: false,
-            message: 'Lorem ipsum dolor sit amet',
-            result: 'success',
-            icon: 'error',
-            endOfQuiz: false,
-            STORAGE_KEY,
-            highestscore,
-            passed: false,
-            failed: false,
-
-        }
-    },
-    mounted() {
-        if (localStorage.getItem(this.STORAGE_KEY) == null) {
-            localStorage.setItem(this.STORAGE_KEY, "0");
+    return {
+      value: 50,
+      dialog: true,
+      show: true,
+      questions,
+      currentQuestion,
+      questionCounter: 0,
+      timer: 100,
+      score: 0,
+      canClick: true,
+      itemsRef,
+      optionChosen,
+      snackbar: false,
+      message: "Lorem ipsum dolor sit amet",
+      result: "success",
+      icon: "error",
+      endOfQuiz: false,
+      STORAGE_KEY,
+      highestscore,
+      passed: false,
+      failed: false,
+      isLoggedIn: false,
+      displayName: "",
+      userId: "",
+      signInScore: 0,
+    };
+  },
+  mounted() {
+    let auth;
+    auth = getAuth();
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("Loggedin!");
+        this.displayName = user.displayName;
+        this.userId = user.uid;
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          this.signInScore = docSnap.data().highscore;
         } else {
-            console.log(localStorage.getItem(this.STORAGE_KEY));
+          // doc.data() will be undefined in this case
+          console.log("No such document!");
         }
+        this.isLoggedIn = true;
+      } else {
+        console.log("not logged in!");
+        this.isLoggedIn = false;
+        if (localStorage.getItem(this.STORAGE_KEY) == null) {
+          localStorage.setItem(this.STORAGE_KEY, "0");
+        } else {
+          console.log(localStorage.getItem(this.STORAGE_KEY));
+        }
+      }
+    });
+  },
+
+  methods: {
+    fetchQuestionsFromServer: async function() {
+      // quizStart.value = false;
+      // quizLoader.value = true;
+      try {
+        // loader.value = false;
+        const response = await axios.get(
+          "https://opentdb.com/api.php?amount=10&category=31&type=multiple"
+        );
+        // const data = await response.json();
+        const newQuestions = response.data.results.map((serverQuestions) => {
+          const arrangedQuestion = {
+            question: serverQuestions.question,
+            choices: "",
+            answer: "",
+            difficulty: serverQuestions.difficulty,
+          };
+
+          const choices = serverQuestions.incorrect_answers;
+
+          arrangedQuestion.answer = Math.floor(Math.random() * 4 + 1);
+
+          choices.splice(
+            arrangedQuestion.answer - 1,
+            0,
+            serverQuestions.correct_answer
+          );
+          arrangedQuestion.choices = choices;
+
+          return arrangedQuestion;
+        });
+
+        this.questions = newQuestions;
+        this.dialog = false;
+        this.show = false;
+        this.loadQuestion();
+        this.countDownTimer();
+      } catch (e) {
+        console.error(e);
+      }
     },
 
-    methods: {
-
-        fetchQuestionsFromServer: async function () {
-            // quizStart.value = false;
-            // quizLoader.value = true;
-            try {
-                // loader.value = false;
-                const response = await axios.get(
-                    "https://opentdb.com/api.php?amount=10&category=31&type=multiple"
-                );
-                // const data = await response.json();
-                const newQuestions = response.data.results.map((serverQuestions) => {
-                    const arrangedQuestion = {
-                        question: serverQuestions.question,
-                        choices: "",
-                        answer: "",
-                        difficulty: serverQuestions.difficulty,
-                    };
-
-                    const choices = serverQuestions.incorrect_answers;
-
-                    arrangedQuestion.answer = Math.floor(Math.random() * 4 + 1);
-
-                    choices.splice(
-                        arrangedQuestion.answer - 1,
-                        0,
-                        serverQuestions.correct_answer
-                    );
-                    arrangedQuestion.choices = choices;
-
-                    return arrangedQuestion;
-                });
-
-                this.questions = newQuestions;
-                this.dialog = false;
-                this.show = false;
-                this.loadQuestion();
-                this.countDownTimer();
-
-
-            } catch (e) {
-                console.error(e);
-            }
-        },
-
-        loadQuestion() {
-            this.canClick = true;
-            if (this.questions.length > this.questionCounter) {
-                //load
-                this.timer = 100;
-                this.currentQuestion = this.questions[this.questionCounter];
-                console.log("current ques", this.currentQuestion.answer);
-                this.questionCounter++;
-
-            } else {
-                this.endOfQuiz = true;
-                if (this.score >= 8) {
-                    this.show = true;
-                    this.passed = true;
-                } else {
-                    this.show = true;
-                    this.failed = true;
-                }
-                this.checkScore();
-            }
-        },
-
-        onOptionClicked: function (choice, item) {
-            if (this.canClick) {
-                const optionID = item + 1;
-                if (this.currentQuestion.answer == optionID) {
-                    this.score += 1;
-
-                    this.snackbar = true;
-                    this.icon = "check_circle"
-                    this.message = "Correct Answer!";
-                    this.result = "success";
-                } else {
-                    this.snackbar = true;
-                    this.message = "Wrong Answer.";
-                    this.result = "error";
-                }
-                this.timer = 100;
-                this.canClick = false;
-
-                // go to next ques
-                // clearSelected(divContainer);
-                this.loadQuestion();
-            } else {
-                console.log("cant select");
-            }
-        },
-
-        countDownTimer: function () {
-            let interVal = setInterval(() => {
-                if (this.timer > 0) {
-                    this.timer--;
-                } else {
-                    if (this.questionCounter > 10) {
-                        this.endOfQuiz.value = true;
-                        if (this.score >= 8) {
-                            this.show = true;
-                            this.passed = true;
-                        } else {
-                            this.show = true;
-                            this.failed = true;
-                        }
-                    } else {
-                        this.loadQuestion();
-                        this.countDownTimer();
-                        clearInterval(interVal);
-                    }
-                }
-            }, 100);
-        },
-
-        checkScore: function () {
-            if (this.score > parseInt(localStorage.getItem(this.STORAGE_KEY))) {
-                localStorage.setItem(this.STORAGE_KEY, this.score);
-            }
-        },
-
-        reload: function () {
-            this.$router.go(this.$router.currentRoute);
+    loadQuestion() {
+      this.canClick = true;
+      if (this.questions.length > this.questionCounter) {
+        //load
+        this.timer = 100;
+        this.currentQuestion = this.questions[this.questionCounter];
+        console.log("current ques", this.currentQuestion.answer);
+        this.questionCounter++;
+      } else {
+        this.endOfQuiz = true;
+        if (this.score >= 8) {
+          this.show = true;
+          this.passed = true;
+        } else {
+          this.show = true;
+          this.failed = true;
         }
+        this.checkScore();
+      }
+    },
 
+    onOptionClicked: function(choice, item) {
+      if (this.canClick) {
+        const optionID = item + 1;
+        if (this.currentQuestion.answer == optionID) {
+          this.score += 1;
 
-    }
+          this.snackbar = true;
+          this.icon = "check_circle";
+          this.message = "Correct Answer!";
+          this.result = "success";
+        } else {
+          this.snackbar = true;
+          this.message = "Wrong Answer.";
+          this.result = "error";
+        }
+        this.timer = 100;
+        this.canClick = false;
 
+        // go to next ques
+        // clearSelected(divContainer);
+        this.loadQuestion();
+      } else {
+        console.log("cant select");
+      }
+    },
 
-}
+    countDownTimer: function() {
+      let interVal = setInterval(() => {
+        if (this.timer > 0) {
+          this.timer--;
+        } else {
+          if (this.questionCounter > 10) {
+            this.endOfQuiz.value = true;
+            if (this.score >= 8) {
+              this.show = true;
+              this.passed = true;
+            } else {
+              this.show = true;
+              this.failed = true;
+            }
+          } else {
+            this.loadQuestion();
+            this.countDownTimer();
+            clearInterval(interVal);
+          }
+        }
+      }, 100);
+    },
 
+    checkScore: async function() {
+      if (this.score > parseInt(localStorage.getItem(this.STORAGE_KEY))) {
+        localStorage.setItem(this.STORAGE_KEY, this.score);
+      }
+
+      if (this.isLoggedIn) {
+        await setDoc(doc(db, "users", this.userId), {
+          name: this.displayName,
+          highscore: this.score,
+        });
+      }
+    },
+
+    reload: function() {
+      this.$router.go(this.$router.currentRoute);
+    },
+
+    signInWithGoogle: function() {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(getAuth(), provider)
+        .then((data) => {
+          console.log("Successfully login! " + data);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    handleSignOut: function() {
+      let auth;
+      auth = getAuth();
+      signOut(auth).then(() => {
+        this.$router.push("/midterm-project");
+      });
+    },
+  },
+};
 </script>
 
 <style scoped>
 .cardz {
-    background-color: #00000040 !important;
-    outline: 1px solid #ffffff33;
-    backdrop-filter: blur(5px);
+  background-color: #00000040 !important;
+  outline: 1px solid #ffffff33;
+  backdrop-filter: blur(5px);
 }
 
 .bg2 {
-    position: absolute;
-    inset: 0;
-    filter: grayscale(1) brightness(0.35);
-    z-index: 2;
-    transform: scale(1.4);
+  position: absolute;
+  inset: 0;
+  filter: grayscale(1) brightness(0.35);
+  z-index: 2;
+  transform: scale(1.4);
 }
 
 .bg3 {
-    position: absolute;
-    width: 100%;
-    height: 50%;
-    bottom: 0;
-    filter: grayscale(1) brightness(0.35);
-    z-index: 0;
-    object-fit: cover;
+  position: absolute;
+  width: 100%;
+  height: 50%;
+  bottom: 0;
+  filter: grayscale(1) brightness(0.35);
+  z-index: 0;
+  object-fit: cover;
 }
 
 .outine-2 {
-    border: 2px solid white;
+  border: 2px solid white;
 }
 
 .card--flex-toolbar {
-    margin-top: -64px;
+  margin-top: -64px;
 }
 
 .learn-more-btn {
-    text-transform: initial;
-    text-decoration: underline;
+  text-transform: initial;
+  text-decoration: underline;
 }
 
 p {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .toolbar-bg {
-    width: 100vw;
-    position: absolute;
-    height: 100vh;
-    position: absolute;
-    z-index: -1;
-    left: 0;
-    object-fit: cover;
+  width: 100vw;
+  position: absolute;
+  height: 100vh;
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  object-fit: cover;
 }
 
 .wraps {
-    background: url("https://i.ibb.co/k3z7p2V/v1012-bg-03b.jpg") no-repeat center center fixed;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
-    z-index: 1;
+  background: url("https://i.ibb.co/k3z7p2V/v1012-bg-03b.jpg") no-repeat center
+    center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+  z-index: 1;
 }
 </style>
 
 <style>
 .v-content__wrap {
-    height: 100% !important;
+  height: 100% !important;
 }
 </style>
